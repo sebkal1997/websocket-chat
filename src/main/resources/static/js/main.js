@@ -10,6 +10,7 @@ var connectingElement = document.querySelector('.connecting');
 
 var stompClient = null;
 var username = null;
+var roomId = null;
 
 var colors = [
     '#2196F3', '#32c787', '#00BCD4', '#ff5652',
@@ -33,11 +34,13 @@ function connect(event) {
 
 
 function onConnected() {
+    //Generate UUID
+    roomId = uuidv4();
     // Subscribe to the Public Topic
-    stompClient.subscribe('/topic/public', onMessageReceived);
+    stompClient.subscribe('/chat/' + roomId, onMessageReceived);
 
     // Tell your username to the server
-    stompClient.send("/app/chat.register",
+    stompClient.send("/app/chat/" + roomId + "/join",
         {},
         JSON.stringify({sender: username, type: 'JOIN'})
     )
@@ -62,7 +65,7 @@ function send(event) {
             type: 'CHAT'
         };
 
-        stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
+        stompClient.send("/app/chat/" + roomId, {}, JSON.stringify(chatMessage));
         messageInput.value = '';
     }
     event.preventDefault();
@@ -115,6 +118,12 @@ function getAvatarColor(messageSender) {
 
     var index = Math.abs(hash % colors.length);
     return colors[index];
+}
+
+function uuidv4() {
+  return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+  );
 }
 
 usernameForm.addEventListener('submit', connect, true)
